@@ -1,5 +1,6 @@
 import { Display } from "./Display";
 import { Memory } from "./Memory";
+import { Registers } from "./Registers";
 
 export class Chip8 {
     // Chip8 emulation class
@@ -7,5 +8,6 @@ export class Chip8 {
         console.log('Construct new Chip-8 emulator object');
         this.display = new Display();
         this.memory = new Memory();
+        this.registers = new Registers();
     }
 }

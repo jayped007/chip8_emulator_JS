@@ -11,6 +11,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _Display__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
 /* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
+/* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6);
+
 
 
 
@@ -20,6 +22,7 @@ class Chip8 {
         console.log('Construct new Chip-8 emulator object');
         this.display = new _Display__WEBPACK_IMPORTED_MODULE_0__.Display();
         this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_1__.Memory();
+        this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_2__.Registers();
     }
 }
 
@@ -152,6 +155,77 @@ const LOAD_PROGRAM_ADDRESS = 0x200;
 const CHAR_SET_ADDRESS = 0x000;
 
 
+/***/ }),
+/* 6 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Registers": () => (/* binding */ Registers)
+/* harmony export */ });
+/* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
+/* harmony import */ var _constants_registerConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(7);
+
+
+
+class Registers {
+  constructor() {
+    console.log('Construct Chip-8 Registers object');
+    this.V = new Uint8Array(_constants_registerConstants__WEBPACK_IMPORTED_MODULE_1__.NUMBER_OF_REGISTERS); // 16 registers, each holds unsigned byte
+    this.I = 0;
+    this.DT = 0;
+    this.ST = 0;
+    this.PC = _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_0__.LOAD_PROGRAM_ADDRESS;
+    this.SP = -1; // -1 -> empty, why?, push increments, first push -> [0]
+    this.stack = new Uint16Array(_constants_registerConstants__WEBPACK_IMPORTED_MODULE_1__.STACK_SIZE);
+    this.reset();
+  }
+  reset() {
+    this.V.fill(0);
+    this.I = 0;
+    this.delayTimer = 0;
+    this.soundTimer = 0;
+    this.PC = _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_0__.LOAD_PROGRAM_ADDRESS;
+    this.SP = -1; // indicates empty stack
+    this.stack.fill(0);
+  }
+
+  stackPush(value) {
+    this.SP++;
+    this.assertStackOverflow();
+    this.stack[this.SP] = value;
+  }
+
+  stackPop() {
+    const value = this.stack[this.SP];
+    this.SP--;
+    this.assertStackUnderflow();
+    return value;
+  }
+  assertStackOverflow() {
+    console.assert(this.SP < _constants_registerConstants__WEBPACK_IMPORTED_MODULE_1__.STACK_SIZE, 'Error stack Overflow');
+  }
+  assertStackUnderflow() {
+    console.assert(this.SP >= -1, 'Error stack Underflow');
+  }
+}
+
+
+/***/ }),
+/* 7 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "NUMBER_OF_REGISTERS": () => (/* binding */ NUMBER_OF_REGISTERS),
+/* harmony export */   "STACK_SIZE": () => (/* binding */ STACK_SIZE),
+/* harmony export */   "TIMER_60_HZ": () => (/* binding */ TIMER_60_HZ)
+/* harmony export */ });
+const NUMBER_OF_REGISTERS = 16;
+const STACK_SIZE = 16;
+const TIMER_60_HZ = 1000 / 60;
+
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -219,6 +293,8 @@ __webpack_require__.r(__webpack_exports__);
 const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8();
 chip8.memory.setMemory(0x05, 0x1B);
 console.log(`mem location 0x05 : [${chip8.memory.getMemory(0x05)}]`);
+chip8.registers.stackPush(55);
+console.log(`stack pop: [${chip8.registers.stackPop()}]`);
 
 })();
 
