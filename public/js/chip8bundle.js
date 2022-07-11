@@ -10,8 +10,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "Chip8": () => (/* binding */ Chip8)
 /* harmony export */ });
 /* harmony import */ var _Display__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
-/* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
-/* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6);
+/* harmony import */ var _Keyboard__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(8);
+/* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
+/* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(6);
+
 
 
 
@@ -21,8 +23,9 @@ class Chip8 {
     constructor() {
         console.log('Construct new Chip-8 emulator object');
         this.display = new _Display__WEBPACK_IMPORTED_MODULE_0__.Display();
-        this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_1__.Memory();
-        this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_2__.Registers();
+        this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_2__.Memory();
+        this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_3__.Registers();
+        this.keyboard = new _Keyboard__WEBPACK_IMPORTED_MODULE_1__.Keyboard();
     }
 }
 
@@ -230,6 +233,79 @@ __webpack_require__.r(__webpack_exports__);
 const NUMBER_OF_REGISTERS = 16;
 const STACK_SIZE = 16;
 const TIMER_60_HZ = 1000 / 60;
+
+
+/***/ }),
+/* 8 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Keyboard": () => (/* binding */ Keyboard)
+/* harmony export */ });
+/* harmony import */ var _constants_keyboardConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
+
+
+class Keyboard {
+  constructor() {
+    this.keys = new Array(_constants_keyboardConstants__WEBPACK_IMPORTED_MODULE_0__.NUMBER_OF_KEYS).fill(false);
+    // NOTE: event handler defined inline with event listeners below
+    document.addEventListener('keydown', (event) => this.keydown(event.key));
+    document.addEventListener('keyup', (event) => this.keyup(event.key));
+  }
+
+  keydown(key) {
+    const keyIndex = _constants_keyboardConstants__WEBPACK_IMPORTED_MODULE_0__.keyMap.findIndex((mapKey) => mapKey === key.toLowerCase());
+    if (keyIndex > -1) {
+      this.keys[keyIndex] = true;
+    }
+  }
+
+  keyup(key) {
+    const keyIndex = _constants_keyboardConstants__WEBPACK_IMPORTED_MODULE_0__.keyMap.findIndex((mapKey) => mapKey === key.toLowerCase());
+    if (keyIndex > -1) {
+      this.keys[keyIndex] = false;
+      console.log(`Pressed ${key} mapped to ${keyIndex}.`)
+    }
+  }
+
+  isKeydown(keyIndex) {
+    return this.keys[keyIndex];
+  }
+
+  hasKeydown() {
+    return this.keys.findIndex((key) => key);
+  }
+}
+
+/***/ }),
+/* 9 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "NUMBER_OF_KEYS": () => (/* binding */ NUMBER_OF_KEYS),
+/* harmony export */   "keyMap": () => (/* binding */ keyMap)
+/* harmony export */ });
+const NUMBER_OF_KEYS = 16;
+const keyMap = [
+  '1',
+  '2',
+  '3',
+  'q',
+  'w',
+  'e',
+  'a',
+  's',
+  'd',
+  'z',
+  'x',
+  'c',
+  '4',
+  'r',
+  'f',
+  'v',
+];
 
 
 /***/ })
