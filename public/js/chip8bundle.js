@@ -138,6 +138,12 @@ class Memory {
         );
     }
 
+    getOpcode(index) {
+        const highByte = this.getMemory(index);
+        const lowByte = this.getMemory(index + 1);
+        return (highByte << 8) | lowByte;
+    }
+
 }
 
 /***/ }),
