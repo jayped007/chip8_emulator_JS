@@ -41,7 +41,17 @@ class Display {
         this.screen.height = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY;
         this.context = this.screen.getContext('2d'); // canvas -> access 2D API
         this.context.fillStyle = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.BG_COLOR; // black
+        this.screenBuffer = [];
         this.context.fillRect(0, 0, this.screen.width, this.screen.height);
+    }
+
+    reset() {
+        for (i = 0; i < this.screen.height; i++) {
+            this.screenBuffer.push([]); // creates [i] as an array, 2D array
+            for (j = 0; j < this.screen.width; j++) {
+                this.screenBuffer[i].push(0); // buf[i][j] = 0
+            }
+        }
     }
 }
 
