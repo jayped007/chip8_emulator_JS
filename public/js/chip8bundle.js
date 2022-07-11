@@ -37,12 +37,11 @@ class Display {
     constructor() {
         console.log('Construct a new Display object');
         this.screen = document.querySelector('canvas');
-        this.screen.width = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH;
-        this.screen.height = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT;
+        this.screen.width = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY;
+        this.screen.height = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY;
         this.context = this.screen.getContext('2d'); // canvas -> access 2D API
-        this.context.fillStyle = "#000"; // black
-        this.context.fillRect(0, 0, this.screen.width, this.screen.height)
-
+        this.context.fillStyle = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.BG_COLOR; // black
+        this.context.fillRect(0, 0, this.screen.width, this.screen.height);
     }
 }
 
@@ -52,12 +51,17 @@ class Display {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "BG_COLOR": () => (/* binding */ BG_COLOR),
+/* harmony export */   "COLOR": () => (/* binding */ COLOR),
 /* harmony export */   "DISPLAY_HEIGHT": () => (/* binding */ DISPLAY_HEIGHT),
+/* harmony export */   "DISPLAY_MULTIPLY": () => (/* binding */ DISPLAY_MULTIPLY),
 /* harmony export */   "DISPLAY_WIDTH": () => (/* binding */ DISPLAY_WIDTH)
 /* harmony export */ });
-const DISPLAY_WIDTH = 64; // Chip8 window width
+const DISPLAY_WIDTH = 64; // Chip8 window width - per Chip8 spec
 const DISPLAY_HEIGHT = 32; // Chip8 window height
-
+const DISPLAY_MULTIPLY = 10; // scale Chip8 screen to browser window resolution
+const BG_COLOR = "#000"; // black
+const COLOR = "#3F6"; // ??
 
 /***/ })
 /******/ 	]);
