@@ -41,17 +41,40 @@ class Display {
         this.screen.height = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY;
         this.context = this.screen.getContext('2d'); // canvas -> access 2D API
         this.context.fillStyle = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.BG_COLOR; // black
-        this.screenBuffer = [];
-        this.context.fillRect(0, 0, this.screen.width, this.screen.height);
+        this.frameBuffer = [];
+        this.reset();
     }
 
     reset() {
-        for (i = 0; i < this.screen.height; i++) {
-            this.screenBuffer.push([]); // creates [i] as an array, 2D array
-            for (j = 0; j < this.screen.width; j++) {
-                this.screenBuffer[i].push(0); // buf[i][j] = 0
+        let loops = 0;
+        for (let i = 0; i < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT; i++) {
+            loops++;
+            this.frameBuffer.push([]); // creates [i] as an array, 2D array
+            for (let j = 0; j < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH; j++) {
+                loops++;
+                this.frameBuffer[i].push((loops & 1 == 1) ? 1 : 0); // buf[i][j] = 0
             }
         }
+        this.context.fillRect(0, 0, this.screen.width, this.screen.height);
+        this.drawBuffer();
+        console.log('reset display');
+    }
+
+    drawBuffer() {
+        console.log('drawBuffer()');
+        for (let i = 0; i < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT; i++) {
+            this.frameBuffer.push([]); // creates [i] as an array, 2D array
+            for (let j = 0; j < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH; j++) {
+                this.drawPixel(i, j, this.frameBuffer[i][j]); // (y, x)
+            }
+        }        
+    }
+
+    drawPixel(y, x, value) {
+        this.context.fillStyle = value ? _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.COLOR : _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.BG_COLOR;
+        this.context.fillRect(
+            x * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY, y*_constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY,
+            (x+1)*_constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY, (y+1)*_constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_MULTIPLY);
     }
 }
 
