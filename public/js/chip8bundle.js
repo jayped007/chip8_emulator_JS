@@ -16,6 +16,7 @@ class Chip8 {
     // Chip8 emulation class
     constructor() {
         console.log('Construct new Chip-8 emulator object');
+        console.log('chip8 test me');
         this.display = new _Display__WEBPACK_IMPORTED_MODULE_0__.Display();
 
     }
@@ -30,12 +31,33 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Display": () => (/* binding */ Display)
 /* harmony export */ });
+/* harmony import */ var _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3);
+
 class Display {
     constructor() {
         console.log('Construct a new Display object');
         this.screen = document.querySelector('canvas');
+        this.screen.width = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH;
+        this.screen.height = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT;
+        this.context = this.screen.getContext('2d'); // canvas -> access 2D API
+        this.context.fillStyle = "#000"; // black
+        this.context.fillRect(0, 0, this.screen.width, this.screen.height)
+
     }
 }
+
+/***/ }),
+/* 3 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "DISPLAY_HEIGHT": () => (/* binding */ DISPLAY_HEIGHT),
+/* harmony export */   "DISPLAY_WIDTH": () => (/* binding */ DISPLAY_WIDTH)
+/* harmony export */ });
+const DISPLAY_WIDTH = 64; // Chip8 window width
+const DISPLAY_HEIGHT = 32; // Chip8 window height
+
 
 /***/ })
 /******/ 	]);
