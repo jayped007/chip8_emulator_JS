@@ -1,3 +1,7 @@
+import { CHAR_SET } from './constants/charSetConstants';
+import { CHAR_SET_ADDRESS } from './constants/memoryConstants';
+import { TIMER_60_HZ } from './constants/registerConstants';
+
 import { Display } from "./Display";
 import { Keyboard } from "./Keyboard";
 import { Memory } from "./Memory";
@@ -11,5 +15,15 @@ export class Chip8 {
         this.memory = new Memory();
         this.registers = new Registers();
         this.keyboard = new Keyboard();
+        this.loadCharSet();
     }
+
+    sleep(ms = TIMER_60_HZ) { // is not itself async but returns a Promise?
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+    
+    loadCharSet() {
+        this.memory.memory.set(CHAR_SET, CHAR_SET_ADDRESS);
+    }
+
 }
