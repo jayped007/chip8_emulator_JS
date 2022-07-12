@@ -1,6 +1,7 @@
 import { CHAR_SET } from './constants/charSetConstants';
 import { CHAR_SET_ADDRESS } from './constants/memoryConstants';
 import { TIMER_60_HZ } from './constants/registerConstants';
+import { Disassembler } from './Disassembler';
 
 import { Display } from "./Display";
 import { Keyboard } from "./Keyboard";
@@ -16,6 +17,7 @@ export class Chip8 {
         this.registers = new Registers();
         this.keyboard = new Keyboard();
         this.soundCard = new SoundCard();
+        this.disassembler = new Disassembler();
         this.loadCharSet();
         this.display = new Display(this.memory);
     }

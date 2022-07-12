@@ -12,11 +12,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
 /* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
 /* harmony import */ var _constants_registerConstants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
-/* harmony import */ var _Display__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5);
-/* harmony import */ var _Keyboard__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(7);
-/* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9);
-/* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(10);
-/* harmony import */ var _SoundCard__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(11);
+/* harmony import */ var _Disassembler__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5);
+/* harmony import */ var _Display__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(7);
+/* harmony import */ var _Keyboard__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9);
+/* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(11);
+/* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(12);
+/* harmony import */ var _SoundCard__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(13);
+
 
 
 
@@ -31,12 +33,13 @@ class Chip8 {
     // Chip8 emulation class
     constructor() {
         console.log('Construct new Chip-8 emulator object');
-        this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_5__.Memory();
-        this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_6__.Registers();
-        this.keyboard = new _Keyboard__WEBPACK_IMPORTED_MODULE_4__.Keyboard();
-        this.soundCard = new _SoundCard__WEBPACK_IMPORTED_MODULE_7__.SoundCard();
+        this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_6__.Memory();
+        this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_7__.Registers();
+        this.keyboard = new _Keyboard__WEBPACK_IMPORTED_MODULE_5__.Keyboard();
+        this.soundCard = new _SoundCard__WEBPACK_IMPORTED_MODULE_8__.SoundCard();
+        this.disassembler = new _Disassembler__WEBPACK_IMPORTED_MODULE_3__.Disassembler();
         this.loadCharSet();
-        this.display = new _Display__WEBPACK_IMPORTED_MODULE_3__.Display(this.memory);
+        this.display = new _Display__WEBPACK_IMPORTED_MODULE_4__.Display(this.memory);
     }
 
     sleep(ms = _constants_registerConstants__WEBPACK_IMPORTED_MODULE_2__.TIMER_60_HZ) { // is not itself async but returns a Promise?
@@ -116,9 +119,362 @@ const TIMER_60_HZ = 1000 / 60;
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Disassembler": () => (/* binding */ Disassembler)
+/* harmony export */ });
+/* harmony import */ var _constants_instructionSet__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6);
+
+
+class Disassembler {
+  disassemble(opcode) {
+    const instruction = _constants_instructionSet__WEBPACK_IMPORTED_MODULE_0__.INSTRUCTION_SET.find(
+      (instruction) => (opcode & instruction.mask) === instruction.pattern
+    );
+    // NOTE: ASSUMES found, but potentially undefined return value
+    const args = instruction.arguments.map(
+      (arg) => (opcode & arg.mask) >> arg.shift
+    );
+    return { instruction, args };
+  }
+}
+
+/* NOTE: elements of INSTRUCTION set are JSON objects like:
+  {
+    key: 2,
+    id: 'CLS',
+    name: 'CLS',
+    mask: 0xffff,
+    pattern: 0x00e0,
+    arguments: [],
+  },
+  {
+    key: 32,
+    id: 'LD_B_VX',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf033,
+    arguments: [MASK_X],
+  },
+*/
+
+/* HOW does disassemble(opcode) work based on the above?
+#1. find is given a function in the same way a filter() function does,
+    it iterates through array sequentially and returns FIRST match
+    where function returns true.  What if always false?
+#2. find iterates through the INSTRUCTION_SET array,
+    calling the function for each element in the array,
+    returns first that returns true
+#3. Apparently that guarantees you found the right instruction and you
+    are returned the JSON as 'instruction'.
+*/
+
+
+/***/ }),
+/* 6 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "INSTRUCTION_SET": () => (/* binding */ INSTRUCTION_SET),
+/* harmony export */   "MASK_HIGHEST_AND_LOWEST_BYTE": () => (/* binding */ MASK_HIGHEST_AND_LOWEST_BYTE),
+/* harmony export */   "MASK_HIGHEST_BYTE": () => (/* binding */ MASK_HIGHEST_BYTE),
+/* harmony export */   "MASK_KK": () => (/* binding */ MASK_KK),
+/* harmony export */   "MASK_N": () => (/* binding */ MASK_N),
+/* harmony export */   "MASK_NNN": () => (/* binding */ MASK_NNN),
+/* harmony export */   "MASK_X": () => (/* binding */ MASK_X),
+/* harmony export */   "MASK_Y": () => (/* binding */ MASK_Y)
+/* harmony export */ });
+const MASK_NNN = { mask: 0x0fff };
+const MASK_N = { mask: 0x000f };
+const MASK_X = { mask: 0x0f00, shift: 8 };
+const MASK_Y = { mask: 0x00f0, shift: 4 };
+const MASK_KK = { mask: 0x00ff };
+const MASK_HIGHEST_BYTE = 0xf000;
+const MASK_HIGHEST_AND_LOWEST_BYTE = 0xf00f;
+const INSTRUCTION_SET = [
+  {
+    key: 2,
+    id: 'CLS',
+    name: 'CLS',
+    mask: 0xffff,
+    pattern: 0x00e0,
+    arguments: [],
+  },
+  {
+    key: 3,
+    id: 'RET',
+    name: 'RET',
+    mask: 0xffff,
+    pattern: 0x00ee,
+    arguments: [],
+  },
+  {
+    key: 4,
+    id: 'JP_ADDR',
+    name: 'JP',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0x1000,
+    arguments: [MASK_NNN],
+  },
+  {
+    key: 5,
+    id: 'CALL_ADDR',
+    name: 'CALL',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0x2000,
+    arguments: [MASK_NNN],
+  },
+  {
+    key: 6,
+    id: 'SE_VX_KK',
+    name: 'SE',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0x3000,
+    arguments: [MASK_X, MASK_KK],
+  },
+  {
+    key: 7,
+    id: 'SNE_VX_KK',
+    name: 'SNE',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0x4000,
+    arguments: [MASK_X, MASK_KK],
+  },
+  {
+    key: 8,
+    id: 'SE_VX_VY',
+    name: 'SE',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x5000,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 9,
+    id: 'LD_VX_KK',
+    name: 'LD',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0x6000,
+    arguments: [MASK_X, MASK_KK],
+  },
+  {
+    key: 10,
+    id: 'ADD_VX_KK',
+    name: 'ADD',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0x7000,
+    arguments: [MASK_X, MASK_KK],
+  },
+  {
+    key: 11,
+    id: 'LD_VX_VY',
+    name: 'LD',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8000,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 12,
+    id: 'OR_VX_VY',
+    name: 'OR',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8001,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 13,
+    id: 'AND_VX_VY',
+    name: 'AND',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8002,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 14,
+    id: 'XOR_VX_VY',
+    name: 'XOR',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8003,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 15,
+    id: 'ADD_VX_VY',
+    name: 'ADD',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8004,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 16,
+    id: 'SUB_VX_VY',
+    name: 'SUB',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8005,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 17,
+    id: 'SHR_VX_VY',
+    name: 'SHR',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8006,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 18,
+    id: 'SUBN_VX_VY',
+    name: 'SUBN',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x8007,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 19,
+    id: 'SHL_VX_VY',
+    name: 'SHL',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x800e,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 20,
+    id: 'SNE_VX_VY',
+    name: 'SNE',
+    mask: MASK_HIGHEST_AND_LOWEST_BYTE,
+    pattern: 0x9000,
+    arguments: [MASK_X, MASK_Y],
+  },
+  {
+    key: 21,
+    id: 'LD_I_ADDR',
+    name: 'LD',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0xa000,
+    arguments: [MASK_NNN],
+  },
+  {
+    key: 22,
+    id: 'JP_V0_ADDR',
+    name: 'JP',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0xb000,
+    arguments: [MASK_NNN],
+  },
+  {
+    key: 23,
+    id: 'RND_VX_KK',
+    name: 'RND',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0xc000,
+    arguments: [MASK_X, MASK_KK],
+  },
+  {
+    key: 24,
+    id: 'DRW_VX_VY_N',
+    name: 'DRW',
+    mask: MASK_HIGHEST_BYTE,
+    pattern: 0xd000,
+    arguments: [MASK_X, MASK_Y, MASK_N],
+  },
+  {
+    key: 25,
+    id: 'SKP_VX',
+    name: 'SKP',
+    mask: 0xf0ff,
+    pattern: 0xe09e,
+    arguments: [MASK_X],
+  },
+  {
+    key: 26,
+    id: 'SKNP_VX',
+    name: 'SKNP',
+    mask: 0xf0ff,
+    pattern: 0xe0a1,
+    arguments: [MASK_X],
+  },
+  {
+    key: 27,
+    id: 'LD_VX_DT',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf007,
+    arguments: [MASK_X],
+  },
+  {
+    key: 27,
+    id: 'LD_VX_K',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf00a,
+    arguments: [MASK_X],
+  },
+  {
+    key: 28,
+    id: 'LD_DT_VX',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf015,
+    arguments: [MASK_X],
+  },
+  {
+    key: 29,
+    id: 'LD_ST_VX',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf018,
+    arguments: [MASK_X],
+  },
+  {
+    key: 30,
+    id: 'ADD_I_VX',
+    name: 'ADD',
+    mask: 0xf0ff,
+    pattern: 0xf01e,
+    arguments: [MASK_X],
+  },
+  {
+    key: 31,
+    id: 'LD_F_VX',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf029,
+    arguments: [MASK_X],
+  },
+  {
+    key: 32,
+    id: 'LD_B_VX',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf033,
+    arguments: [MASK_X],
+  },
+  {
+    key: 32,
+    id: 'LD_I_VX',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf055,
+    arguments: [MASK_X],
+  },
+  {
+    key: 33,
+    id: 'LD_VX_I',
+    name: 'LD',
+    mask: 0xf0ff,
+    pattern: 0xf065,
+    arguments: [MASK_X],
+  },
+];
+
+
+/***/ }),
+/* 7 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Display": () => (/* binding */ Display)
 /* harmony export */ });
-/* harmony import */ var _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6);
+/* harmony import */ var _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
 /* harmony import */ var _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
 
 
@@ -193,7 +549,7 @@ class Display {
 }
 
 /***/ }),
-/* 6 */
+/* 8 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -211,14 +567,14 @@ const BG_COLOR = "#000"; // black
 const COLOR = "#3F6"; // ??
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Keyboard": () => (/* binding */ Keyboard)
 /* harmony export */ });
-/* harmony import */ var _constants_keyboardConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
+/* harmony import */ var _constants_keyboardConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(10);
 
 
 class Keyboard {
@@ -254,7 +610,7 @@ class Keyboard {
 }
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -284,7 +640,7 @@ const keyMap = [
 
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -330,7 +686,7 @@ class Memory {
 }
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -386,14 +742,14 @@ class Registers {
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "SoundCard": () => (/* binding */ SoundCard)
 /* harmony export */ });
-/* harmony import */ var _constants_soundCardConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(12);
+/* harmony import */ var _constants_soundCardConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
 
 
 class SoundCard {
@@ -441,7 +797,7 @@ class SoundCard {
 }
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -525,32 +881,38 @@ function startupTests(chip8) {
     chip8.display.drawSprite(30, 30, 0x0a, 5);
 }
 
+const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8();
+
 async function runChip8() {
     // const rom = await fetch('./roms/test_opcode');
     // const arrayBuffer = await rom.arrayBuffer();
     // const romBuffer = new Uint8Array(arrayBuffer);
     // const chip8 = new Chip8(romBuffer);
-    const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8();
-    startupTests(chip8);
-    chip8.registers.ST = 5;
-    while (1) {
-      await chip8.sleep(200);
-      if (chip8.registers.DT > 0) {
-        await chip8.sleep();
-        chip8.registers.DT--;
-      }
-      if (chip8.registers.ST > 0) {
-        chip8.soundCard.enableSound();
-        await chip8.sleep();
-        chip8.registers.ST--;
-      }
-      if (chip8.registers.ST === 0) {
-        chip8.soundCard.disableSound();
-      }
-    }
-  }
+    // startupTests(chip8);
+    // chip8.registers.ST = 2;
+    // while (1) {
+    //   await chip8.sleep(200);
+    //   if (chip8.registers.DT > 0) {
+    //     await chip8.sleep();
+    //     chip8.registers.DT--;
+    //   }
+    //   if (chip8.registers.ST > 0) {
+    //     chip8.soundCard.enableSound();
+    //     await chip8.sleep();
+    //     chip8.registers.ST--;
+    //   }
+    //   if (chip8.registers.ST === 0) {
+    //     chip8.soundCard.disableSound();
+    //   }
+    // }
+}
   
-  runChip8();
+//runChip8();
+
+console.log('disassembling');
+let result = chip8.disassembler.disassemble(0x00e0);
+console.log(`${result ? result : "fail"}`);
+
 })();
 
 /******/ })()
