@@ -1076,7 +1076,7 @@ async function runChip8() {
     const romBuffer = new Uint8Array(arrayBuffer);
     const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8(romBuffer);
     while (1) {
-      await chip8.sleep(20); // 200
+      await chip8.sleep(5); // 200
       if (chip8.registers.DT > 0) {
         await chip8.sleep();
         chip8.registers.DT--;
