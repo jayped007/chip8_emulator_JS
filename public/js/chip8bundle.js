@@ -10,14 +10,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "Chip8": () => (/* binding */ Chip8)
 /* harmony export */ });
 /* harmony import */ var _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
-/* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
-/* harmony import */ var _constants_registerConstants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
-/* harmony import */ var _Disassembler__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5);
-/* harmony import */ var _Display__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(7);
-/* harmony import */ var _Keyboard__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9);
-/* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(11);
-/* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(12);
-/* harmony import */ var _SoundCard__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(13);
+/* harmony import */ var _constants_displayConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
+/* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
+/* harmony import */ var _constants_registerConstants__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5);
+/* harmony import */ var _Disassembler__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6);
+/* harmony import */ var _Display__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(8);
+/* harmony import */ var _Keyboard__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(9);
+/* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(11);
+/* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
+/* harmony import */ var _SoundCard__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(13);
+
 
 
 
@@ -31,25 +33,195 @@ __webpack_require__.r(__webpack_exports__);
 
 class Chip8 {
     // Chip8 emulation class
-    constructor() {
+    constructor(romBuffer) {
         console.log('Construct new Chip-8 emulator object');
-        this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_6__.Memory();
-        this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_7__.Registers();
-        this.keyboard = new _Keyboard__WEBPACK_IMPORTED_MODULE_5__.Keyboard();
-        this.soundCard = new _SoundCard__WEBPACK_IMPORTED_MODULE_8__.SoundCard();
-        this.disassembler = new _Disassembler__WEBPACK_IMPORTED_MODULE_3__.Disassembler();
+        this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_7__.Memory();
+        this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_8__.Registers();
         this.loadCharSet();
-        this.display = new _Display__WEBPACK_IMPORTED_MODULE_4__.Display(this.memory);
+        this.loadRom(romBuffer);
+        this.keyboard = new _Keyboard__WEBPACK_IMPORTED_MODULE_6__.Keyboard();
+        this.soundCard = new _SoundCard__WEBPACK_IMPORTED_MODULE_9__.SoundCard();
+        this.disassembler = new _Disassembler__WEBPACK_IMPORTED_MODULE_4__.Disassembler();
+        this.display = new _Display__WEBPACK_IMPORTED_MODULE_5__.Display(this.memory);
     }
 
-    sleep(ms = _constants_registerConstants__WEBPACK_IMPORTED_MODULE_2__.TIMER_60_HZ) { // is not itself async but returns a Promise?
+    sleep(ms = _constants_registerConstants__WEBPACK_IMPORTED_MODULE_3__.TIMER_60_HZ) { // is not itself async but returns a Promise?
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
     
     loadCharSet() {
-        this.memory.memory.set(_constants_charSetConstants__WEBPACK_IMPORTED_MODULE_0__.CHAR_SET, _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_1__.CHAR_SET_ADDRESS);
+        this.memory.memory.set(_constants_charSetConstants__WEBPACK_IMPORTED_MODULE_0__.CHAR_SET, _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.CHAR_SET_ADDRESS);
     }
 
+    loadRom(romBuffer) {
+        console.assert(
+          romBuffer.length + _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.LOAD_PROGRAM_ADDRESS <= _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.MEMORY_SIZE,
+          'This rom is too large.'
+        );
+        this.memory.memory.set(romBuffer, _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.LOAD_PROGRAM_ADDRESS);
+        this.registers.PC = _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.LOAD_PROGRAM_ADDRESS;
+      }
+
+    async execute(opcode) {
+        console.log(`temp: opcode: ${opcode}`);
+        const { instruction, args } = this.disassembler.disassemble(opcode);
+        const { id } = instruction;
+        console.log('i', instruction);
+        console.log('a', args);
+        console.log('id', id);
+        switch (id) {
+          case 'CLS':
+            this.display.reset();
+            break;
+          case 'RET':
+            this.registers.PC = this.registers.stackPop();
+            break;
+          case 'JP_ADDR':
+            this.registers.PC = args[0];
+            break;
+          case 'CALL_ADDR':
+            this.registers.stackPush(this.registers.PC);
+            this.registers.PC = args[0];
+            break;
+          case 'SE_VX_KK':
+            if (this.registers.V[args[0]] === args[1]) {
+              this.registers.PC += 2;
+            }
+            break;
+          case 'SNE_VX_KK':
+            if (this.registers.V[args[0]] !== args[1]) {
+              this.registers.PC += 2;
+            }
+            break;
+          case 'SE_VX_VY':
+            if (this.registers.V[args[0]] === this.registers.V[args[1]]) {
+              this.registers.PC += 2;
+            }
+            break;
+          case 'LD_VX_KK':
+            this.registers.V[args[0]] = args[1];
+            break;
+          case 'ADD_VX_KK':
+            this.registers.V[args[0]] += args[1];
+            break;
+          case 'LD_VX_VY':
+            this.registers.V[args[0]] = this.registers.V[args[1]];
+            break;
+          case 'OR_VX_VY':
+            this.registers.V[args[0]] |= this.registers.V[args[1]];
+            break;
+          case 'AND_VX_VY':
+            this.registers.V[args[0]] &= this.registers.V[args[1]];
+            break;
+          case 'XOR_VX_VY':
+            this.registers.V[args[0]] ^= this.registers.V[args[1]];
+            break;
+          case 'ADD_VX_VY':
+            this.registers.V[0x0f] =
+              this.registers.V[args[0]] + this.registers.V[args[1]] > 0xff;
+            this.registers.V[args[0]] += this.registers.V[args[1]];
+            break;
+          case 'SUB_VX_VY':
+            this.registers.V[0x0f] =
+              this.registers.V[[args[0]]] > this.registers.V[args[1]];
+            this.registers.V[args[0]] -= this.registers.V[args[1]];
+            break;
+          case 'SHR_VX_VY':
+            this.registers.V[0x0f] = this.registers.V[args[0]] & 0x01;
+            this.registers.V[args[0]] >>= 1;
+            break;
+          case 'SUBN_VX_VY':
+            this.registers.V[0x0f] =
+              this.registers.V[args[1]] > this.registers.V[args[0]];
+            this.registers.V[args[0]] =
+              this.registers.V[args[1]] - this.registers.V[args[0]];
+            break;
+          case 'SHL_VX_VY':
+            this.registers.V[0x0f] = Boolean(this.registers.V[args[0]] & 0x80); //0b10000000
+            this.registers.V[args[0]] <<= 1;
+            break;
+          case 'SNE_VX_VY':
+            if (this.registers.V[args[0]] !== this.registers.V[args[1]]) {
+              this.registers.PC += 2;
+            }
+            break;
+          case 'LD_I_ADDR':
+            this.registers.I = args[0];
+            break;
+          case 'JP_V0_ADDR':
+            this.registers.PC = this.registers.V[0] + args[0];
+            break;
+          case 'RND_VX_KK':
+            const random = Math.floor(Math.random() * 0xff);
+            this.registers.V[args[0]] = random & args[1];
+            break;
+          case 'DRW_VX_VY_N':
+            const colision = this.display.drawSprite(
+              this.registers.V[args[0]],
+              this.registers.V[args[1]],
+              this.registers.I,
+              args[2]
+            );
+            this.registers.V[0x0f] = colision;
+            break;
+          case 'SKP_VX':
+            if (this.keyboard.isKeydown(this.registers.V[args[0]])) {
+              this.registers.PC += 2;
+            }
+            break;
+          case 'SKNP_VX':
+            if (!this.keyboard.isKeydown(this.registers.V[args[0]])) {
+              this.registers.PC += 2;
+            }
+            break;
+          case 'LD_VX_DT':
+            this.registers.V[args[0]] = this.registers.DT;
+            break;
+          case 'LD_VX_K':
+            let keyPressed = -1;
+            while (keyPressed === -1) {
+              keyPressed = this.keyboard.hasKeydown();
+              await this.sleep();
+            }
+            this.registers.V[args[0]] = keyPressed;
+            console.log('got key', this.registers.V[args[0]]);
+            break;
+          case 'LD_DT_VX':
+            this.registers.DT = this.registers.V[args[0]];
+            break;
+          case 'LD_ST_VX':
+            this.registers.ST = this.registers.V[args[0]];
+            break;
+          case 'ADD_I_VX':
+            this.registers.I += this.registers.V[args[0]];
+            break;
+          case 'LD_F_VX':
+            this.registers.I = this.registers.V[args[0]] * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_1__.SPRITE_HIGHT;
+            break;
+          case 'LD_B_VX':
+            let x = this.registers.V[args[0]];
+            const hundreds = Math.floor(x / 100);
+            x = x - hundreds * 100;
+            const tens = Math.floor(x / 10);
+            const ones = x - tens * 10;
+            this.memory.memory[this.registers.I] = hundreds;
+            this.memory.memory[this.registers.I + 1] = tens;
+            this.memory.memory[this.registers.I + 2] = ones;
+            break;
+          case 'LD_I_VX':
+            for (let i = 0; i <= args[0]; i++) {
+              this.memory.memory[this.registers.I + i] = this.registers.V[i];
+            }
+            break;
+          case 'LD_VX_I':
+            for (let i = 0; i <= args[0]; i++) {
+              this.registers.V[i] = this.memory.memory[this.registers.I + i];
+            }
+            break;
+          default:
+            console.error(`Instruction with id ${id} not found`, instruction, args);
+        }
+      }
 }
 
 
@@ -89,6 +261,26 @@ const CHAR_SET = [
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "BG_COLOR": () => (/* binding */ BG_COLOR),
+/* harmony export */   "COLOR": () => (/* binding */ COLOR),
+/* harmony export */   "DISPLAY_HEIGHT": () => (/* binding */ DISPLAY_HEIGHT),
+/* harmony export */   "DISPLAY_SCALING": () => (/* binding */ DISPLAY_SCALING),
+/* harmony export */   "DISPLAY_WIDTH": () => (/* binding */ DISPLAY_WIDTH),
+/* harmony export */   "SPRITE_HIGHT": () => (/* binding */ SPRITE_HIGHT)
+/* harmony export */ });
+const DISPLAY_WIDTH = 64; // Chip8 window width - per Chip8 spec
+const DISPLAY_HEIGHT = 32; // Chip8 window height
+const DISPLAY_SCALING = 10; // scale Chip8 screen to browser window resolution
+const SPRITE_HIGHT = 5; // height for character sprite definitions at 0x00
+const BG_COLOR = "#000"; // black
+const COLOR = "#3F6"; // ??
+
+/***/ }),
+/* 4 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "CHAR_SET_ADDRESS": () => (/* binding */ CHAR_SET_ADDRESS),
 /* harmony export */   "LOAD_PROGRAM_ADDRESS": () => (/* binding */ LOAD_PROGRAM_ADDRESS),
 /* harmony export */   "MEMORY_SIZE": () => (/* binding */ MEMORY_SIZE)
@@ -99,7 +291,7 @@ const CHAR_SET_ADDRESS = 0x000;
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -114,25 +306,30 @@ const TIMER_60_HZ = 1000 / 60;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Disassembler": () => (/* binding */ Disassembler)
 /* harmony export */ });
-/* harmony import */ var _constants_instructionSet__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6);
+/* harmony import */ var _constants_instructionSet__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7);
 
 
 class Disassembler {
   disassemble(opcode) {
+    //console.log(`disassemble ${opcode.toString(16)}`);
     const instruction = _constants_instructionSet__WEBPACK_IMPORTED_MODULE_0__.INSTRUCTION_SET.find(
       (instruction) => (opcode & instruction.mask) === instruction.pattern
     );
     // NOTE: ASSUMES found, but potentially undefined return value
+    if (!instruction) {
+      console.log(`cant disassemble ${opcode.toString(16)}`);
+    }
     const args = instruction.arguments.map(
       (arg) => (opcode & arg.mask) >> arg.shift
     );
+    //console.log(`disassembled ${opcode.toString(16)} : ${instruction} : ${args}`);
     return { instruction, args };
   }
 }
@@ -169,7 +366,7 @@ class Disassembler {
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -467,14 +664,14 @@ const INSTRUCTION_SET = [
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Display": () => (/* binding */ Display)
 /* harmony export */ });
-/* harmony import */ var _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
+/* harmony import */ var _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3);
 /* harmony import */ var _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
 
 
@@ -547,24 +744,6 @@ class Display {
         return pixelCollision;
     }
 }
-
-/***/ }),
-/* 8 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "BG_COLOR": () => (/* binding */ BG_COLOR),
-/* harmony export */   "COLOR": () => (/* binding */ COLOR),
-/* harmony export */   "DISPLAY_HEIGHT": () => (/* binding */ DISPLAY_HEIGHT),
-/* harmony export */   "DISPLAY_SCALING": () => (/* binding */ DISPLAY_SCALING),
-/* harmony export */   "DISPLAY_WIDTH": () => (/* binding */ DISPLAY_WIDTH)
-/* harmony export */ });
-const DISPLAY_WIDTH = 64; // Chip8 window width - per Chip8 spec
-const DISPLAY_HEIGHT = 32; // Chip8 window height
-const DISPLAY_SCALING = 10; // scale Chip8 screen to browser window resolution
-const BG_COLOR = "#000"; // black
-const COLOR = "#3F6"; // ??
 
 /***/ }),
 /* 9 */
@@ -647,7 +826,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Memory": () => (/* binding */ Memory)
 /* harmony export */ });
-/* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3);
+/* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4);
 
 
 class Memory {
@@ -693,8 +872,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Registers": () => (/* binding */ Registers)
 /* harmony export */ });
-/* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3);
-/* harmony import */ var _constants_registerConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
+/* harmony import */ var _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4);
+/* harmony import */ var _constants_registerConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5);
 
 
 
@@ -871,47 +1050,57 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Chip8__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 
 
-function startupTests(chip8) {
-    chip8.registers.stackPush(55);
-    console.log(`stack pop: [${chip8.registers.stackPop()}]`);
-    for (let i = 0; i < 16; i++) {
-        let o = i*5; // offset
-        console.log(`${i} sprite: [${chip8.memory.getMemory(o).toString(16)}, ${chip8.memory.getMemory(o+1).toString(16)}, ${chip8.memory.getMemory(o+2).toString(16)}, ${chip8.memory.getMemory(o+3).toString(16)}, ${chip8.memory.getMemory(o+4).toString(16)}]`);
-    }
-    chip8.display.drawSprite(30, 30, 0x0a, 5);
-}
+// function startupTests(chip8) {
+//     chip8.registers.stackPush(55);
+//     console.log(`stack pop: [${chip8.registers.stackPop()}]`);
+//     for (let i = 0; i < 16; i++) {
+//         let o = i*5; // offset
+//         console.log(`${i} sprite: [${chip8.memory.getMemory(o).toString(16)}, ${chip8.memory.getMemory(o+1).toString(16)}, ${chip8.memory.getMemory(o+2).toString(16)}, ${chip8.memory.getMemory(o+3).toString(16)}, ${chip8.memory.getMemory(o+4).toString(16)}]`);
+//     }
+//     chip8.display.drawSprite(30, 30, 0x0a, 5);
+// }
 
-const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8();
+// async function loadRom() {
+//     const rom = await fetch('./roms/test_opcode');
+//     console.log("after fetch of rom");
+//     console.log(`rom: ${rom}`);
+//     const arrayBuffer = await rom.arrayBuffer();
+//     const romBuffer = new Uint8Array(arrayBuffer);
+//     console.log(`romBuffer: ${romBuffer}`);
+//     return romBuffer;
+// }
 
 async function runChip8() {
-    // const rom = await fetch('./roms/test_opcode');
-    // const arrayBuffer = await rom.arrayBuffer();
-    // const romBuffer = new Uint8Array(arrayBuffer);
-    // const chip8 = new Chip8(romBuffer);
-    // startupTests(chip8);
-    // chip8.registers.ST = 2;
-    // while (1) {
-    //   await chip8.sleep(200);
-    //   if (chip8.registers.DT > 0) {
-    //     await chip8.sleep();
-    //     chip8.registers.DT--;
-    //   }
-    //   if (chip8.registers.ST > 0) {
-    //     chip8.soundCard.enableSound();
-    //     await chip8.sleep();
-    //     chip8.registers.ST--;
-    //   }
-    //   if (chip8.registers.ST === 0) {
-    //     chip8.soundCard.disableSound();
-    //   }
-    // }
-}
-  
-//runChip8();
+    const rom = await fetch('./roms/test_opcode');
+    const arrayBuffer = await rom.arrayBuffer();
+    const romBuffer = new Uint8Array(arrayBuffer);
+    const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8(romBuffer);
+    while (1) {
+      await chip8.sleep(20); // 200
+      if (chip8.registers.DT > 0) {
+        await chip8.sleep();
+        chip8.registers.DT--;
+      }
+      if (chip8.registers.ST > 0) {
+        chip8.soundCard.enableSound();
+        await chip8.sleep();
+        chip8.registers.ST--;
+      }
+      if (chip8.registers.ST === 0) {
+        chip8.soundCard.disableSound();
+      }
+      let opcode = chip8.memory.getOpcode(chip8.registers.PC);
+      chip8.execute(opcode);
 
-console.log('disassembling');
-let result = chip8.disassembler.disassemble(0x00e0);
-console.log(`${result ? result : "fail"}`);
+    //   if (chip8.registers.PC > 0x200+romBuffer.length) {
+    //     alert("PC out of range!");
+    //     exit(1);
+    //   }
+    }
+}
+
+console.log("Start me up");
+runChip8();
 
 })();
 

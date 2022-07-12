@@ -2,13 +2,18 @@ import { INSTRUCTION_SET } from './constants/instructionSet';
 
 export class Disassembler {
   disassemble(opcode) {
+    //console.log(`disassemble ${opcode.toString(16)}`);
     const instruction = INSTRUCTION_SET.find(
       (instruction) => (opcode & instruction.mask) === instruction.pattern
     );
     // NOTE: ASSUMES found, but potentially undefined return value
+    if (!instruction) {
+      console.log(`cant disassemble ${opcode.toString(16)}`);
+    }
     const args = instruction.arguments.map(
       (arg) => (opcode & arg.mask) >> arg.shift
     );
+    //console.log(`disassembled ${opcode.toString(16)} : ${instruction} : ${args}`);
     return { instruction, args };
   }
 }
