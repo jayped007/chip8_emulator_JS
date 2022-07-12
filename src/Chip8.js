@@ -6,6 +6,7 @@ import { Display } from "./Display";
 import { Keyboard } from "./Keyboard";
 import { Memory } from "./Memory";
 import { Registers } from "./Registers";
+import { SoundCard } from './SoundCard';
 
 export class Chip8 {
     // Chip8 emulation class
@@ -14,6 +15,7 @@ export class Chip8 {
         this.memory = new Memory();
         this.registers = new Registers();
         this.keyboard = new Keyboard();
+        this.soundCard = new SoundCard();
         this.loadCharSet();
         this.display = new Display(this.memory);
     }

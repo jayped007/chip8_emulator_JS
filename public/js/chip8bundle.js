@@ -16,6 +16,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Keyboard__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(7);
 /* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9);
 /* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(10);
+/* harmony import */ var _SoundCard__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(11);
+
 
 
 
@@ -32,6 +34,7 @@ class Chip8 {
         this.memory = new _Memory__WEBPACK_IMPORTED_MODULE_5__.Memory();
         this.registers = new _Registers__WEBPACK_IMPORTED_MODULE_6__.Registers();
         this.keyboard = new _Keyboard__WEBPACK_IMPORTED_MODULE_4__.Keyboard();
+        this.soundCard = new _SoundCard__WEBPACK_IMPORTED_MODULE_7__.SoundCard();
         this.loadCharSet();
         this.display = new _Display__WEBPACK_IMPORTED_MODULE_3__.Display(this.memory);
     }
@@ -382,6 +385,72 @@ class Registers {
 }
 
 
+/***/ }),
+/* 11 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "SoundCard": () => (/* binding */ SoundCard)
+/* harmony export */ });
+/* harmony import */ var _constants_soundCardConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(12);
+
+
+class SoundCard {
+  constructor() {
+    this.soundEnabled = false;
+    if ('AudioContext' in window || 'webkitAudioContext' in window) {
+      const audioContext = new (AudioContext || webkitAudioContext)();
+      const masterGain = new GainNode(audioContext);
+      masterGain.gain.value = _constants_soundCardConstants__WEBPACK_IMPORTED_MODULE_0__.INITIAL_VOLUME;
+      masterGain.connect(audioContext.destination);
+      let soundEnabled = false;
+      let oscillator;
+      Object.defineProperties(this, {
+        soundEnabled: {
+          get: function () {
+            return soundEnabled;
+          },
+          set: function (value) {
+            if (value === soundEnabled) {
+              return;
+            }
+            soundEnabled = value;
+            if (soundEnabled) {
+              oscillator = new OscillatorNode(audioContext, {
+                type: 'square',
+              });
+              oscillator.connect(masterGain);
+              oscillator.start();
+            } else {
+              oscillator.stop();
+            }
+          },
+        },
+      });
+    }
+  }
+
+  enableSound() {
+    this.soundEnabled = true;
+  }
+
+  disableSound() {
+    this.soundEnabled = false;
+  }
+}
+
+/***/ }),
+/* 12 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "INITIAL_VOLUME": () => (/* binding */ INITIAL_VOLUME)
+/* harmony export */ });
+const INITIAL_VOLUME = 0.3;
+
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -453,7 +522,7 @@ function startupTests(chip8) {
         let o = i*5; // offset
         console.log(`${i} sprite: [${chip8.memory.getMemory(o).toString(16)}, ${chip8.memory.getMemory(o+1).toString(16)}, ${chip8.memory.getMemory(o+2).toString(16)}, ${chip8.memory.getMemory(o+3).toString(16)}, ${chip8.memory.getMemory(o+4).toString(16)}]`);
     }
-    //chip8.display.drawSprite(30, 30, 0x0a, 5);
+    chip8.display.drawSprite(30, 30, 0x0a, 5);
 }
 
 async function runChip8() {
@@ -463,20 +532,21 @@ async function runChip8() {
     // const chip8 = new Chip8(romBuffer);
     const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8();
     startupTests(chip8);
+    chip8.registers.ST = 5;
     while (1) {
       await chip8.sleep(200);
       if (chip8.registers.DT > 0) {
         await chip8.sleep();
         chip8.registers.DT--;
       }
-    //   if (chip8.registers.ST > 0) {
-    //     chip8.soundCard.enableSound();
-    //     await chip8.sleep();
-    //     chip8.registers.ST--;
-    //   }
-    //   if (chip8.registers.ST === 0) {
-    //     chip8.soundCard.disableSound();
-    //   }
+      if (chip8.registers.ST > 0) {
+        chip8.soundCard.enableSound();
+        await chip8.sleep();
+        chip8.registers.ST--;
+      }
+      if (chip8.registers.ST === 0) {
+        chip8.soundCard.disableSound();
+      }
     }
   }
   
