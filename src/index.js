@@ -9,3 +9,4 @@ for (let i = 0; i < 16; i++) {
     let o = i*5; // offset
     console.log(`${i} sprite: [${chip8.memory.getMemory(o).toString(16)}, ${chip8.memory.getMemory(o+1).toString(16)}, ${chip8.memory.getMemory(o+2).toString(16)}, ${chip8.memory.getMemory(o+3).toString(16)}, ${chip8.memory.getMemory(o+4).toString(16)}]`);
 }
+chip8.display.drawSprite(1, 1, 0x0a, 5);
