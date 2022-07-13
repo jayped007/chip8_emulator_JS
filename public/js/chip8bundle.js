@@ -775,6 +775,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 const NUMBER_OF_KEYS = 16;
 const keyMap = [
+  'x',
   '1',
   '2',
   '3',
@@ -785,7 +786,6 @@ const keyMap = [
   's',
   'd',
   'z',
-  'x',
   'c',
   '4',
   'r',

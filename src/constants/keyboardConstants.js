@@ -1,5 +1,6 @@
 export const NUMBER_OF_KEYS = 16;
 export const keyMap = [
+  'x',
   '1',
   '2',
   '3',
@@ -10,7 +11,6 @@ export const keyMap = [
   's',
   'd',
   'z',
-  'x',
   'c',
   '4',
   'r',
