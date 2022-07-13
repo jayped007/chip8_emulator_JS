@@ -8,7 +8,6 @@ import { Display } from "./Display";
 import { Keyboard } from "./Keyboard";
 import { Memory } from "./Memory";
 import { Registers } from "./Registers";
-import { SoundCard } from './SoundCard';
 
 export class Chip8 {
     // Chip8 emulation class
@@ -19,7 +18,6 @@ export class Chip8 {
         this.loadCharSet();
         this.loadRom(romBuffer);
         this.keyboard = new Keyboard();
-        this.soundCard = new SoundCard();
         this.disassembler = new Disassembler();
         this.display = new Display(this.memory);
     }
@@ -35,22 +33,22 @@ export class Chip8 {
     loadRom(romBuffer) {
         console.assert(
           romBuffer.length + LOAD_PROGRAM_ADDRESS <= MEMORY_SIZE,
-          'This rom is too large.'
+          'ROM is too large.'
         );
         this.memory.memory.set(romBuffer, LOAD_PROGRAM_ADDRESS);
         this.registers.PC = LOAD_PROGRAM_ADDRESS;
       }
 
     async execute(opcode) {
-        console.log(`temp: opcode: ${opcode}`);
         const { instruction, args } = this.disassembler.disassemble(opcode);
         const { id } = instruction;
-        console.log('i', instruction);
-        console.log('a', args);
-        console.log('id', id);
+        this.registers.PC += 2;
+        // console.log('i', instruction);
+        // console.log('a', args);
+        // console.log('id', id);
         switch (id) {
           case 'CLS':
-            this.display.reset();
+            this.display.clear();
             break;
           case 'RET':
             this.registers.PC = this.registers.stackPop();
@@ -135,13 +133,13 @@ export class Chip8 {
             this.registers.V[args[0]] = random & args[1];
             break;
           case 'DRW_VX_VY_N':
-            const colision = this.display.drawSprite(
+            const collision = this.display.drawSprite(
               this.registers.V[args[0]],
               this.registers.V[args[1]],
               this.registers.I,
               args[2]
             );
-            this.registers.V[0x0f] = colision;
+            this.registers.V[0x0f] = collision;
             break;
           case 'SKP_VX':
             if (this.keyboard.isKeydown(this.registers.V[args[0]])) {

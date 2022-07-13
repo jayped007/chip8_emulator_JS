@@ -1,45 +1,28 @@
-import { INITIAL_VOLUME } from './constants/soundCardConstants';
+export const makeSoundcard = () => {
+	const VOLUME = 0.3;
+	const atx = new (window.AudioContext || window.webkitAudioContext)();
+	const gain = atx.createGain();
+	const osc = atx.createOscillator();
+	osc.connect(gain).connect(atx.destination);
 
-export class SoundCard {
-  constructor() {
-    this.soundEnabled = false;
-    if ('AudioContext' in window || 'webkitAudioContext' in window) {
-      const audioContext = new (AudioContext || webkitAudioContext)();
-      const masterGain = new GainNode(audioContext);
-      masterGain.gain.value = INITIAL_VOLUME;
-      masterGain.connect(audioContext.destination);
-      let soundEnabled = false;
-      let oscillator;
-      Object.defineProperties(this, {
-        soundEnabled: {
-          get: function () {
-            return soundEnabled;
-          },
-          set: function (value) {
-            if (value === soundEnabled) {
-              return;
-            }
-            soundEnabled = value;
-            if (soundEnabled) {
-              oscillator = new OscillatorNode(audioContext, {
-                type: 'square',
-              });
-              oscillator.connect(masterGain);
-              oscillator.start();
-            } else {
-              oscillator.stop();
-            }
-          },
-        },
-      });
-    }
-  }
+	gain.gain.setValueAtTime(0.00001, atx.currentTime);
+	osc.type = "triangle";
+	osc.frequency.value = 392;
+	osc.start(atx.currentTime);
+	let playing = false;
 
-  enableSound() {
-    this.soundEnabled = true;
-  }
+	return {
+		start: () => {
+			if (playing) return;
+			playing = true;
+			gain.gain.setValueAtTime(VOLUME, atx.currentTime);
+		},
+		stop: () => {
+			if (!playing) return;
+			playing = false;
+			gain.gain.setValueAtTime(VOLUME, atx.currentTime);
+			gain.gain.exponentialRampToValueAtTime(0.0000001, atx.currentTime + .02);
+		},
+	}
 
-  disableSound() {
-    this.soundEnabled = false;
-  }
-}
+};

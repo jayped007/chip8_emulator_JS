@@ -1,4 +1,5 @@
 import { Chip8 } from './Chip8';
+import { makeSoundcard } from "./SoundCard";
 
 // function startupTests(chip8) {
 //     chip8.registers.stackPush(55);
@@ -10,43 +11,40 @@ import { Chip8 } from './Chip8';
 //     chip8.display.drawSprite(30, 30, 0x0a, 5);
 // }
 
-// async function loadRom() {
-//     const rom = await fetch('./roms/test_opcode');
-//     console.log("after fetch of rom");
-//     console.log(`rom: ${rom}`);
-//     const arrayBuffer = await rom.arrayBuffer();
-//     const romBuffer = new Uint8Array(arrayBuffer);
-//     console.log(`romBuffer: ${romBuffer}`);
-//     return romBuffer;
-// }
+const TIME_UNIT = 1020 / 60;
+const CLOCKS_PER_TIME_UNIT = 9;
 
 async function runChip8() {
     const rom = await fetch('./roms/test_opcode');
     const arrayBuffer = await rom.arrayBuffer();
     const romBuffer = new Uint8Array(arrayBuffer);
     const chip8 = new Chip8(romBuffer);
-    while (1) {
-      await chip8.sleep(5); // 200
-      if (chip8.registers.DT > 0) {
-        await chip8.sleep();
-        chip8.registers.DT--;
-      }
-      if (chip8.registers.ST > 0) {
-        chip8.soundCard.enableSound();
-        await chip8.sleep();
-        chip8.registers.ST--;
-      }
-      if (chip8.registers.ST === 0) {
-        chip8.soundCard.disableSound();
-      }
-      let opcode = chip8.memory.getOpcode(chip8.registers.PC);
-      chip8.execute(opcode);
+    var loopId, soundcard;
 
-    //   if (chip8.registers.PC > 0x200+romBuffer.length) {
-    //     alert("PC out of range!");
-    //     exit(1);
-    //   }
+    soundcard = makeSoundcard();
+    clearInterval(loopId);
+    loopId = setInterval(loop, TIME_UNIT);
+
+    function loop() {
+      for (let i = 0; i < CLOCKS_PER_TIME_UNIT; i++) {
+        const opcode = chip8.memory.getOpcode(chip8.registers.PC);
+        chip8.execute(opcode);
+        chip8.display.draw();
+      }
+      //chip8.display.draw();
+  
+      if (chip8.registers.DT > 0) {
+        --chip8.registers.DT;
+      }
+  
+      if (chip8.registers.ST > 0) {
+        --chip8.registers.ST;
+        soundcard && soundcard.start();
+      } else {
+        soundcard && soundcard.stop();
+      }
     }
+
 }
 
 console.log("Start me up");

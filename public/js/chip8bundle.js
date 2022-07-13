@@ -18,8 +18,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Keyboard__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(9);
 /* harmony import */ var _Memory__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(11);
 /* harmony import */ var _Registers__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
-/* harmony import */ var _SoundCard__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(13);
-
 
 
 
@@ -40,7 +38,6 @@ class Chip8 {
         this.loadCharSet();
         this.loadRom(romBuffer);
         this.keyboard = new _Keyboard__WEBPACK_IMPORTED_MODULE_6__.Keyboard();
-        this.soundCard = new _SoundCard__WEBPACK_IMPORTED_MODULE_9__.SoundCard();
         this.disassembler = new _Disassembler__WEBPACK_IMPORTED_MODULE_4__.Disassembler();
         this.display = new _Display__WEBPACK_IMPORTED_MODULE_5__.Display(this.memory);
     }
@@ -56,22 +53,22 @@ class Chip8 {
     loadRom(romBuffer) {
         console.assert(
           romBuffer.length + _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.LOAD_PROGRAM_ADDRESS <= _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.MEMORY_SIZE,
-          'This rom is too large.'
+          'ROM is too large.'
         );
         this.memory.memory.set(romBuffer, _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.LOAD_PROGRAM_ADDRESS);
         this.registers.PC = _constants_memoryConstants__WEBPACK_IMPORTED_MODULE_2__.LOAD_PROGRAM_ADDRESS;
       }
 
     async execute(opcode) {
-        console.log(`temp: opcode: ${opcode}`);
         const { instruction, args } = this.disassembler.disassemble(opcode);
         const { id } = instruction;
-        console.log('i', instruction);
-        console.log('a', args);
-        console.log('id', id);
+        this.registers.PC += 2;
+        // console.log('i', instruction);
+        // console.log('a', args);
+        // console.log('id', id);
         switch (id) {
           case 'CLS':
-            this.display.reset();
+            this.display.clear();
             break;
           case 'RET':
             this.registers.PC = this.registers.stackPop();
@@ -156,13 +153,13 @@ class Chip8 {
             this.registers.V[args[0]] = random & args[1];
             break;
           case 'DRW_VX_VY_N':
-            const colision = this.display.drawSprite(
+            const collision = this.display.drawSprite(
               this.registers.V[args[0]],
               this.registers.V[args[1]],
               this.registers.I,
               args[2]
             );
-            this.registers.V[0x0f] = colision;
+            this.registers.V[0x0f] = collision;
             break;
           case 'SKP_VX':
             if (this.keyboard.isKeydown(this.registers.V[args[0]])) {
@@ -302,7 +299,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 const NUMBER_OF_REGISTERS = 16;
 const STACK_SIZE = 16;
-const TIMER_60_HZ = 1000 / 60;
+const TIMER_60_HZ = 1020 / 60;
 
 
 /***/ }),
@@ -675,6 +672,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
 
 
+
+const blankBuffer = () => Array(_constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT).fill([]).map(row => Array(_constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH).fill(0));
+
 class Display {
     constructor(memory) {
         console.log('Construct a new Display object');
@@ -683,65 +683,41 @@ class Display {
         this.screen.width = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING;
         this.screen.height = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING;
         this.context = this.screen.getContext('2d'); // canvas -> access 2D API
-        this.context.fillStyle = _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.BG_COLOR; // black
-        this.frameBuffer = [];
-        this.reset();
+        this.clear();
+        this.draw();
     }
 
-    reset() {
-        let loops = 0;
-        for (let i = 0; i < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT; i++) {
-            loops++;
-            this.frameBuffer.push([]); // creates [i] as an array, 2D array
-            for (let j = 0; j < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH; j++) {
-                loops++;
-                //this.frameBuffer[i].push((loops & 1 == 1) ? 1 : 0); // buf[i][j] = 0
-                this.frameBuffer[i].push(0);
-            }
-        }
-        this.context.fillRect(0, 0, this.screen.width, this.screen.height);
-        this.drawBuffer();
-        console.log('reset display');
-    }
+	clear() { this.frameBuffer = blankBuffer(); }
 
-    drawBuffer() {
-        console.log('drawBuffer()');
-        for (let i = 0; i < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT; i++) {
-            this.frameBuffer.push([]); // creates [i] as an array, 2D array
-            for (let j = 0; j < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH; j++) {
-                this.drawPixel(i, j, this.frameBuffer[i][j]); // (y, x)
-            }
-        }        
-    }
+	draw() {
+		this.frameBuffer.forEach((row, y) =>
+			row.forEach((pic, x) => {
+				this.context.fillStyle = pic ? _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.COLOR : _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.BG_COLOR;
+				this.context.fillRect(x * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING, y * _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING, _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING, _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING);
+			}));
+	}
 
-    drawPixel(y, x, value) {
-        this.context.fillStyle = value ? _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.COLOR : _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.BG_COLOR;
-        this.context.fillRect(
-            x*_constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING,
-            y*_constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING,
-            _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING,
-            _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_SCALING);
-    }
-
-    drawSprite(y, x, spriteAddress, spriteRows) {
-        let pixelCollision = 0;
-        for (let row_offset = 0; row_offset < spriteRows; row_offset++) {
-          const sprite_row = this.memory.memory[spriteAddress + row_offset];
-          for (let col_offset = 0; col_offset < _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_1__.CHAR_SET_WIDTH; col_offset++) {
-            const bitmask = 0b10000000 >> col_offset;  // left to right, vs R to L
-            const this_sprite_bit = (sprite_row & bitmask) ? 1 : 0;
-            if (this_sprite_bit === 1) { // if zero => no change, X^0 = X, no collision
-                const this_row = (y + row_offset) % _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT;
-                const this_col = (x + col_offset) % _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH;
-                if (pixelCollision === 0 && (this.frameBuffer[this_row][this_col] === 1 && this_sprite_bit === 1)) {
-                    pixelCollision = 1;
+    drawSprite(x, y, spriteAddress, spriteRows) {
+        // Output: frameBuffer update, drawBuffer(), collision flag returned
+        let collision = 0;
+        // NOTE: row is y position, not x, first dimension in frameBuffer is y, not x
+        for (let row = 0; row < spriteRows; row++) {
+          const sprite_row = this.memory.memory[spriteAddress + row];
+          let bitmask = 0b10000000;
+          for (let col = 0; col < _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_1__.CHAR_SET_WIDTH; col++, bitmask >>= 1) {
+            const sprite_bit = (sprite_row & bitmask) ? 1 : 0;
+            if (sprite_bit === 1) { // if zero => no change, X^0 = X, no collision
+                const this_row = (y + row) < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT ? (y + row) : (y + row) % _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT;
+                const this_col = (x + col) <  _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH ? (x + col) : (x + col) % _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH;
+                if (this.frameBuffer[this_row][this_col] && sprite_bit) {
+                     collision = 1;
                 }
-                this.frameBuffer[this_row][this_col] ^= this_sprite_bit;
+                this.frameBuffer[this_row][this_col] ^= sprite_bit;
             }
           }
         }
         this.drawBuffer();
-        return pixelCollision;
+        return collision;
     }
 }
 
@@ -926,64 +902,36 @@ class Registers {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "SoundCard": () => (/* binding */ SoundCard)
+/* harmony export */   "makeSoundcard": () => (/* binding */ makeSoundcard)
 /* harmony export */ });
-/* harmony import */ var _constants_soundCardConstants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
+const makeSoundcard = () => {
+	const VOLUME = 0.3;
+	const atx = new (window.AudioContext || window.webkitAudioContext)();
+	const gain = atx.createGain();
+	const osc = atx.createOscillator();
+	osc.connect(gain).connect(atx.destination);
 
+	gain.gain.setValueAtTime(0.00001, atx.currentTime);
+	osc.type = "triangle";
+	osc.frequency.value = 392;
+	osc.start(atx.currentTime);
+	let playing = false;
 
-class SoundCard {
-  constructor() {
-    this.soundEnabled = false;
-    if ('AudioContext' in window || 'webkitAudioContext' in window) {
-      const audioContext = new (AudioContext || webkitAudioContext)();
-      const masterGain = new GainNode(audioContext);
-      masterGain.gain.value = _constants_soundCardConstants__WEBPACK_IMPORTED_MODULE_0__.INITIAL_VOLUME;
-      masterGain.connect(audioContext.destination);
-      let soundEnabled = false;
-      let oscillator;
-      Object.defineProperties(this, {
-        soundEnabled: {
-          get: function () {
-            return soundEnabled;
-          },
-          set: function (value) {
-            if (value === soundEnabled) {
-              return;
-            }
-            soundEnabled = value;
-            if (soundEnabled) {
-              oscillator = new OscillatorNode(audioContext, {
-                type: 'square',
-              });
-              oscillator.connect(masterGain);
-              oscillator.start();
-            } else {
-              oscillator.stop();
-            }
-          },
-        },
-      });
-    }
-  }
+	return {
+		start: () => {
+			if (playing) return;
+			playing = true;
+			gain.gain.setValueAtTime(VOLUME, atx.currentTime);
+		},
+		stop: () => {
+			if (!playing) return;
+			playing = false;
+			gain.gain.setValueAtTime(VOLUME, atx.currentTime);
+			gain.gain.exponentialRampToValueAtTime(0.0000001, atx.currentTime + .02);
+		},
+	}
 
-  enableSound() {
-    this.soundEnabled = true;
-  }
-
-  disableSound() {
-    this.soundEnabled = false;
-  }
-}
-
-/***/ }),
-/* 14 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "INITIAL_VOLUME": () => (/* binding */ INITIAL_VOLUME)
-/* harmony export */ });
-const INITIAL_VOLUME = 0.3;
+};
 
 
 /***/ })
@@ -1048,6 +996,8 @@ var __webpack_exports__ = {};
 (() => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Chip8__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+/* harmony import */ var _SoundCard__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(13);
+
 
 
 // function startupTests(chip8) {
@@ -1060,43 +1010,40 @@ __webpack_require__.r(__webpack_exports__);
 //     chip8.display.drawSprite(30, 30, 0x0a, 5);
 // }
 
-// async function loadRom() {
-//     const rom = await fetch('./roms/test_opcode');
-//     console.log("after fetch of rom");
-//     console.log(`rom: ${rom}`);
-//     const arrayBuffer = await rom.arrayBuffer();
-//     const romBuffer = new Uint8Array(arrayBuffer);
-//     console.log(`romBuffer: ${romBuffer}`);
-//     return romBuffer;
-// }
+const TIME_UNIT = 1020 / 60;
+const CLOCKS_PER_TIME_UNIT = 9;
 
 async function runChip8() {
     const rom = await fetch('./roms/test_opcode');
     const arrayBuffer = await rom.arrayBuffer();
     const romBuffer = new Uint8Array(arrayBuffer);
     const chip8 = new _Chip8__WEBPACK_IMPORTED_MODULE_0__.Chip8(romBuffer);
-    while (1) {
-      await chip8.sleep(5); // 200
-      if (chip8.registers.DT > 0) {
-        await chip8.sleep();
-        chip8.registers.DT--;
-      }
-      if (chip8.registers.ST > 0) {
-        chip8.soundCard.enableSound();
-        await chip8.sleep();
-        chip8.registers.ST--;
-      }
-      if (chip8.registers.ST === 0) {
-        chip8.soundCard.disableSound();
-      }
-      let opcode = chip8.memory.getOpcode(chip8.registers.PC);
-      chip8.execute(opcode);
+    var loopId, soundcard;
 
-    //   if (chip8.registers.PC > 0x200+romBuffer.length) {
-    //     alert("PC out of range!");
-    //     exit(1);
-    //   }
+    soundcard = (0,_SoundCard__WEBPACK_IMPORTED_MODULE_1__.makeSoundcard)();
+    clearInterval(loopId);
+    loopId = setInterval(loop, TIME_UNIT);
+
+    function loop() {
+      for (let i = 0; i < CLOCKS_PER_TIME_UNIT; i++) {
+        const opcode = chip8.memory.getOpcode(chip8.registers.PC);
+        chip8.execute(opcode);
+        chip8.display.draw();
+      }
+      //chip8.display.draw();
+  
+      if (chip8.registers.DT > 0) {
+        --chip8.registers.DT;
+      }
+  
+      if (chip8.registers.ST > 0) {
+        --chip8.registers.ST;
+        soundcard && soundcard.start();
+      } else {
+        soundcard && soundcard.stop();
+      }
     }
+
 }
 
 console.log("Start me up");
