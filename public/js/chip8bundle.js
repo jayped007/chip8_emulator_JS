@@ -699,24 +699,24 @@ class Display {
 
     drawSprite(x, y, spriteAddress, spriteRows) {
         // Output: frameBuffer update, drawBuffer(), collision flag returned
-        let collision = 0;
+        let collision = false;
         // NOTE: row is y position, not x, first dimension in frameBuffer is y, not x
         for (let row = 0; row < spriteRows; row++) {
           const sprite_row = this.memory.memory[spriteAddress + row];
           let bitmask = 0b10000000;
           for (let col = 0; col < _constants_charSetConstants__WEBPACK_IMPORTED_MODULE_1__.CHAR_SET_WIDTH; col++, bitmask >>= 1) {
-            const sprite_bit = (sprite_row & bitmask) ? 1 : 0;
-            if (sprite_bit === 1) { // if zero => no change, X^0 = X, no collision
+            const sprite_bit_set = (sprite_row & bitmask);
+            if (sprite_bit_set) { // if zero => no change, X^0 = X, no collision
                 const this_row = (y + row) < _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT ? (y + row) : (y + row) % _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_HEIGHT;
                 const this_col = (x + col) <  _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH ? (x + col) : (x + col) % _constants_displayConstants__WEBPACK_IMPORTED_MODULE_0__.DISPLAY_WIDTH;
-                if (this.frameBuffer[this_row][this_col] && sprite_bit) {
-                     collision = 1;
+                if (!collision && this.frameBuffer[this_row][this_col]) {
+                     collision = true;
                 }
-                this.frameBuffer[this_row][this_col] ^= sprite_bit;
+                this.frameBuffer[this_row][this_col] ^= 1;
             }
           }
         }
-        this.drawBuffer();
+        this.draw();
         return collision;
     }
 }
@@ -1028,9 +1028,9 @@ async function runChip8() {
       for (let i = 0; i < CLOCKS_PER_TIME_UNIT; i++) {
         const opcode = chip8.memory.getOpcode(chip8.registers.PC);
         chip8.execute(opcode);
-        chip8.display.draw();
+        //chip8.display.draw();
       }
-      //chip8.display.draw();
+      chip8.display.draw();
   
       if (chip8.registers.DT > 0) {
         --chip8.registers.DT;

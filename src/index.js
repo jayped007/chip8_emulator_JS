@@ -29,9 +29,9 @@ async function runChip8() {
       for (let i = 0; i < CLOCKS_PER_TIME_UNIT; i++) {
         const opcode = chip8.memory.getOpcode(chip8.registers.PC);
         chip8.execute(opcode);
-        chip8.display.draw();
+        //chip8.display.draw();
       }
-      //chip8.display.draw();
+      chip8.display.draw();
   
       if (chip8.registers.DT > 0) {
         --chip8.registers.DT;
